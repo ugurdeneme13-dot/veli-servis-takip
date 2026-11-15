@@ -5,20 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Şoför Paneli - Servis Takip</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; text-align: center; }
-        input, button { width: 100%; padding: 12px; margin: 10px 0; font-size: 16px; box-sizing: border-box; }
-        button { background-color: #28a745; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; text-align: center; background-color: #f8f9fa; }
+        h2 { color: #2c3e50; }
+        input, button { width: 100%; padding: 14px; margin: 8px 0; font-size: 16px; box-sizing: border-box; border-radius: 6px; }
+        input { border: 1px solid #ced4da; text-align: center; font-weight: bold; }
+        button { background-color: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; }
         button.sim { background-color: #007bff; }
-        .bilgi { margin-top: 20px; padding: 15px; background: #f4f4f4; border-radius: 5px; }
+        button.durdur { background-color: #dc3545; display: none; }
+        .bilgi { margin-top: 20px; padding: 15px; background: white; border-radius: 6px; border: 1px solid #dee2e6; line-height: 1.6; }
+        .ekran-durum { margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 14px; font-weight: bold; background: #e9ecef; color: #495057; }
+        .ekran-aktif { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     </style>
 </head>
 <body>
     <h2>🚌 Şoför Konum Paylaşımı</h2>
     <input type="text" id="servisKodu" placeholder="Servis Plakası / Kodu (Örn: 34S1001)" value="34S1001">
     
-    <button onclick="gercekGpsBaslat()">Gerçek GPS ile Yayını Başlat</button>
-    <button class="sim" onclick="simulasyonBaslat()">Test Simülasyonu Başlat (PC İçin)</button>
+    <button id="btnGps" onclick="gercekGpsBaslat()">Gerçek GPS ile Yayını Başlat</button>
+    <button id="btnSim" class="sim" onclick="simulasyonBaslat()">Test Simülasyonu Başlat</button>
+    <button id="btnDurdur" class="durdur" onclick="yayiniDurdur()">Yayını Durdur</button>
 
+    <div class="ekran-durum" id="ekranDurum">Ekran Kilidi Önleyici: Beklemede</div>
     <div class="bilgi" id="durum">Durum: Bekleniyor...</div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -26,13 +33,56 @@
         const socket = io();
         let watchId = null;
         let simInterval = null;
+        let wakeLock = null;
+        let yayinAktif = false;
+
+        // Telefon ekranının uyku moduna geçip kapanmasını engelleyen fonksiyon
+        async function ekraniAcikTut() {
+            const ekranKutusu = document.getElementById('ekranDurum');
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    ekranKutusu.innerText = "☀️ Ekran Açık Tutuluyor (Uyku Modu Engellendi)";
+                    ekranKutusu.classList.add('ekran-aktif');
+
+                    wakeLock.addEventListener('release', () => {
+                        ekranKutusu.innerText = "Ekran Kilidi Önleyici: Pasif";
+                        ekranKutusu.classList.remove('ekran-aktif');
+                    });
+                } catch (err) {
+                    ekranKutusu.innerText = "⚠️ Ekran kilidi engellenemedi (Düşük pil veya tarayıcı kısıtı)";
+                    ekranKutusu.classList.remove('ekran-aktif');
+                }
+            } else {
+                ekranKutusu.innerText = "ℹ️ Tarayıcınız otomatik ekran açık tutmayı desteklemiyor.";
+            }
+        }
+
+        // Yayın durdurulduğunda ekran kilidini serbest bırak
+        async function ekranKilidiniBirak() {
+            if (wakeLock !== null) {
+                await wakeLock.release();
+                wakeLock = null;
+            }
+        }
+
+        // Şoför başka uygulamaya geçip tekrar tarayıcıya dönerse ekran kilidini yeniden aktif et
+        document.addEventListener('visibilitychange', async () => {
+            if (yayinAktif && document.visibilityState === 'visible') {
+                await ekraniAcikTut();
+            }
+        });
 
         function gercekGpsBaslat() {
             const kod = document.getElementById('servisKodu').value.trim().toUpperCase();
             if (!kod) return alert("Lütfen servis kodu girin!");
 
             if ("geolocation" in navigator) {
-                document.getElementById('durum').innerText = "GPS aranıyor...";
+                yayinAktif = true;
+                ekraniAcikTut();
+                document.getElementById('btnDurdur').style.display = 'block';
+                document.getElementById('durum').innerText = "GPS uydularına bağlanılıyor...";
+
                 watchId = navigator.geolocation.watchPosition((pos) => {
                     const veri = {
                         servisKodu: kod,
@@ -41,28 +91,35 @@
                         durum: "Servis Hareket Halinde"
                     };
                     socket.emit('konumGonder', veri);
-                    document.getElementById('durum').innerText = `Yayın Aktif (${kod})\nEnlem: ${veri.lat.toFixed(5)}\nBoylam: ${veri.lng.toFixed(5)}`;
+                    document.getElementById('durum').innerText = 
+                        `✅ Yayın Aktif (${kod})\nEnlem: ${veri.lat.toFixed(5)}\nBoylam: ${veri.lng.toFixed(5)}\nHız: ${pos.coords.speed ? Math.round(pos.coords.speed * 3.6) + ' km/s' : '0 km/s'}`;
                 }, (err) => {
                     alert("Konum alınamadı: " + err.message);
-                }, { enableHighAccuracy: true });
+                }, { 
+                    enableHighAccuracy: true,
+                    maximumAge: 0
+                });
             } else {
                 alert("Tarayıcınız konum özelliğini desteklemiyor.");
             }
         }
 
-        // Bilgisayardan test edebilmek için sahte hareket üretici
         function simulasyonBaslat() {
             const kod = document.getElementById('servisKodu').value.trim().toUpperCase();
             if (!kod) return alert("Lütfen servis kodu girin!");
 
-            let lat = 40.9607; // Örnek başlangıç noktası (Sultanbeyli civarı)
-            let lng = 29.2675;
+            yayinAktif = true;
+            ekraniAcikTut();
+            document.getElementById('btnDurdur').style.display = 'block';
+
+            let lat = 40.7731; // Sakarya merkez civarı
+            let lng = 30.3948;
 
             if (simInterval) clearInterval(simInterval);
 
             simInterval = setInterval(() => {
-                lat += 0.0003; // Aracı kuzeye doğru hareket ettir
-                lng += 0.0002; // Aracı doğuya doğru hareket ettir
+                lat += 0.0003;
+                lng += 0.0002;
 
                 socket.emit('konumGonder', {
                     servisKodu: kod,
@@ -71,8 +128,24 @@
                     durum: "Simülasyon Sürüşü"
                 });
 
-                document.getElementById('durum').innerText = `Simülasyon Aktif (${kod})\nEnlem: ${lat.toFixed(5)}\nBoylam: ${lng.toFixed(5)}`;
-            }, 2000); // Her 2 saniyede bir konum atar
+                document.getElementById('durum').innerText = 
+                    `🔄 Simülasyon Aktif (${kod})\nEnlem: ${lat.toFixed(5)}\nBoylam: ${lng.toFixed(5)}`;
+            }, 2000);
+        }
+
+        function yayiniDurdur() {
+            yayinAktif = false;
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            if (simInterval !== null) {
+                clearInterval(simInterval);
+                simInterval = null;
+            }
+            ekranKilidiniBirak();
+            document.getElementById('btnDurdur').style.display = 'none';
+            document.getElementById('durum').innerText = "Durum: Yayın durduruldu.";
         }
     </script>
 </body>
