@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1e293b">
-    <title>Şoför Paneli</title>
+    <title>Şoför Paneli - Otomatik Rota & Yoklama</title>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=8627d205-12fc-4c1b-b8c8-1abb08d3de62&lang=tr_TR" type="text/javascript"></script>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 10px; background-color: #f1f5f9; color: #1e293b; }
@@ -18,9 +19,11 @@
         .plaka-satir input { flex: 1; height: 48px; font-size: 17px; font-weight: bold; text-align: center; text-transform: uppercase; border: 2px solid #cbd5e1; border-radius: 10px; background: #f8fafc; }
         .btn-getir { background: #1e293b; color: #facc15; border: none; padding: 0 18px; height: 48px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; }
 
-        .btn { width: 100%; height: 50px; margin: 6px 0; font-size: 16px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn { width: 100%; height: 48px; margin: 5px 0; font-size: 15px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
         .btn-gps { background-color: #16a34a; }
         .btn-sim { background-color: #2563eb; }
+        .btn-rota { background-color: #7c3aed; }
+        .btn-yandex-nav { background-color: #facc15; color: #0f172a; margin-top: 8px; }
         .btn-durdur { background-color: #dc2626; display: none; }
         
         .durum-cubuk { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
@@ -28,9 +31,14 @@
         .ekran-aktif { background: #dcfce7; color: #166534; font-weight: bold; }
         .bilgi { padding: 10px; background: #f8fafc; border-radius: 8px; font-size: 14px; text-align: center; border: 1px solid #e2e8f0; font-weight: 500; }
 
+        /* Otomatik Rota Harita Alanı */
+        #rotaKutusu { display: none; margin-top: 10px; }
+        #rotaHarita { width: 100%; height: 290px; border-radius: 10px; border: 2px solid #cbd5e1; }
+        .rota-ozet { background: #f3e8ff; color: #581c87; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 8px; border: 1px solid #d8b4fe; }
+
         .liste-baslik { font-size: 16px; font-weight: bold; margin: 0 0 12px 0; color: #1e293b; display: flex; justify-content: space-between; align-items: center; }
 
-        /* Mobil Öğrenci Kartları */
+        /* Öğrenci Kartları */
         .ogrenci-kart { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 12px; background: #fff; border-left: 6px solid #94a3b8; }
         .ogrenci-kart.durum-Bindi { border-left-color: #16a34a; background: #f0fdf4; }
         .ogrenci-kart.durum-İndi { border-left-color: #2563eb; background: #eff6ff; }
@@ -60,7 +68,7 @@
 </head>
 <body>
     <div class="ust-baslik">
-        <h2>🚌 Şoför Kontrol Paneli</h2>
+        <h2>🚌 Şoför Rota & Kontrol Paneli</h2>
     </div>
 
     <div class="kart">
@@ -70,8 +78,16 @@
         </div>
         
         <button class="btn btn-gps" onclick="gercekGpsBaslat()">📍 Canlı GPS Başlat</button>
+        <button class="btn btn-rota" onclick="otomatikRotaOlustur()">🧭 Otomatik Servis Rotası Oluştur</button>
         <button class="btn btn-sim" onclick="simulasyonBaslat()">🔄 Test Simülasyonu</button>
         <button id="btnDurdur" class="btn btn-durdur" onclick="yayiniDurdur()">⏹️ Yayını Durdur</button>
+
+        <!-- Otomatik Oluşturulan Harita Rotası -->
+        <div id="rotaKutusu">
+            <div class="rota-ozet" id="rotaOzet">Rota hesaplanıyor...</div>
+            <div id="rotaHarita"></div>
+            <a id="yandexCokluNavBtn" class="btn btn-yandex-nav" href="#" target="_blank">🚀 Tüm Rotayı Yandex Navigasyon'da Başlat</a>
+        </div>
 
         <div class="durum-cubuk">
             <div class="ekran-durum" id="ekranDurum">Ekran Kilidi: Beklemede</div>
@@ -81,7 +97,7 @@
 
     <div class="kart">
         <div class="liste-baslik">
-            <span>📋 Sefer Yolcu Listesi</span>
+            <span>📋 Durak Sırasına Göre Yolcular</span>
             <span id="ogrenciSayisi" style="background:#1e293b; color:#facc15; padding:2px 10px; border-radius:12px; font-size:14px;">0</span>
         </div>
         <div id="ogrenciListesiAlani">
@@ -92,7 +108,10 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let watchId = null, simInterval = null, wakeLock = null, yayinAktif = false, ogrenciler = [];
+        let watchId = null, simInterval = null, wakeLock = null, yayinAktif = false;
+        let ogrenciler = [];
+        let rotaHaritaObj = null;
+        let mevcutSoforKonumu = null;
 
         function servisKodunuAl() {
             return document.getElementById('servisKodu').value.trim().toUpperCase().replace(/\s+/g, '') || "34S1001";
@@ -108,6 +127,132 @@
             ogrenciler = (sunucuListesi || []).sort((a, b) => (a.siraNo || 0) - (b.siraNo || 0));
             listeyiCiz();
         });
+
+        // İki koordinat arası kuş uçuşu mesafe (Haversine formülü - km)
+        function mesafeHesapla(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        }
+
+        // En Yakın Komşu Algoritması ile Otomatik Rota Optimizasyonu
+        function otomatikRotaOlustur() {
+            const konumluOgrenciler = ogrenciler.filter(o => o.lat && o.lng && o.durum !== 'Gelmedi' && o.durum !== 'İndi');
+            
+            if (konumluOgrenciler.length === 0) {
+                return alert("Rota oluşturulacak konumu kayıtlı ve aktif öğrenci bulunamadı!");
+            }
+
+            document.getElementById('rotaKutusu').style.display = 'block';
+            document.getElementById('rotaOzet').innerText = "📡 Konum alınıyor ve en kısa rota hesaplanıyor...";
+
+            const rotayiHesaplaVeCiz = (baslangicLat, baslangicLng) => {
+                let kalanlar = [...konumluOgrenciler];
+                let siraliDuraklar = [];
+                let aktifLat = baslangicLat;
+                let aktifLng = baslangicLng;
+
+                // En yakın durağı bularak sırayla ekle
+                while (kalanlar.length > 0) {
+                    let enYakinIndex = 0;
+                    let minMesafe = Infinity;
+
+                    for (let i = 0; i < kalanlar.length; i++) {
+                        const d = mesafeHesapla(aktifLat, aktifLng, Number(kalanlar[i].lat), Number(kalanlar[i].lng));
+                        if (d < minMesafe) {
+                            minMesafe = d;
+                            enYakinIndex = i;
+                        }
+                    }
+
+                    const secilen = kalanlar.splice(enYakinIndex, 1)[0];
+                    siraliDuraklar.push(secilen);
+                    aktifLat = Number(secilen.lat);
+                    aktifLng = Number(secilen.lng);
+                }
+
+                // Öğrenci listesinin sırasını yeni optimum rotaya göre güncelle
+                siraliDuraklar.forEach((ogr, idx) => {
+                    ogr.siraNo = idx + 1;
+                });
+                const digerleri = ogrenciler.filter(o => !siraliDuraklar.some(s => s.id === o.id));
+                ogrenciler = [...siraliDuraklar, ...digerleri];
+                listeyiCiz();
+
+                // Yandex Navigasyon çoklu durak linki oluştur (rtext=baslangic~durak1~durak2...)
+                const noktaListesi = [`${baslangicLat},${baslangicLng}`, ...siraliDuraklar.map(d => `${d.lat},${d.lng}`)];
+                document.getElementById('yandexCokluNavBtn').href = `https://yandex.com.tr/harita/?rtext=${noktaListesi.join('~')}&rtt=auto`;
+
+                // Yandex Harita üzerinde çoklu rotayı çiz
+                ymaps.ready(() => {
+                    if (!rotaHaritaObj) {
+                        rotaHaritaObj = new ymaps.Map("rotaHarita", {
+                            center: [baslangicLat, baslangicLng],
+                            zoom: 13,
+                            controls: ['zoomControl', 'trafficControl']
+                        });
+                    } else {
+                        rotaHaritaObj.geoObjects.removeAll();
+                    }
+
+                    const referansNoktalar = [
+                        [baslangicLat, baslangicLng],
+                        ...siraliDuraklar.map(d => [Number(d.lat), Number(d.lng)])
+                    ];
+
+                    const multiRoute = new ymaps.multiRouter.MultiRoute({
+                        referencePoints: referansNoktalar,
+                        params: {
+                            routingMode: 'auto',
+                            avoidTrafficJams: true
+                        }
+                    }, {
+                        boundsAutoApply: true,
+                        routeActiveStrokeWidth: 5,
+                        routeActiveStrokeColor: "#7c3aed"
+                    });
+
+                    // Durak pinlerinin üzerine öğrenci isimlerini yaz
+                    siraliDuraklar.forEach((durak, index) => {
+                        const pin = new ymaps.Placemark([Number(durak.lat), Number(durak.lng)], {
+                            iconContent: `${index + 1}`,
+                            balloonContent: `<strong>${index + 1}. Durak: ${durak.ogrenciAd || durak.ad}</strong><br>${durak.adres || ''}`
+                        }, {
+                            preset: 'islands#violetCircleIcon'
+                        });
+                        rotaHaritaObj.geoObjects.add(pin);
+                    });
+
+                    multiRoute.model.events.add('requestsuccess', () => {
+                        const aktifRota = multiRoute.getActiveRoute();
+                        if (aktifRota) {
+                            const mesafe = aktifRota.properties.get("distance").text;
+                            const sure = aktifRota.properties.get("durationInTraffic").text;
+                            document.getElementById('rotaOzet').innerText = 
+                                `✅ ${siraliDuraklar.length} Durak Sıralandı • Mesafe: ${mesafe} • Tahmini Süre: ${sure}`;
+                        }
+                    });
+
+                    rotaHaritaObj.geoObjects.add(multiRoute);
+                });
+            };
+
+            // Şoförün anlık GPS konumunu al, alınamazsa ilk öğrencinin konumundan başlat
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    mevcutSoforKonumu = [pos.coords.latitude, pos.coords.longitude];
+                    rotayiHesaplaVeCiz(pos.coords.latitude, pos.coords.longitude);
+                }, () => {
+                    rotayiHesaplaVeCiz(Number(konumluOgrenciler[0].lat), Number(konumluOgrenciler[0].lng));
+                }, { enableHighAccuracy: true, timeout: 6000 });
+            } else {
+                rotayiHesaplaVeCiz(Number(konumluOgrenciler[0].lat), Number(konumluOgrenciler[0].lng));
+            }
+        }
 
         function durumDegistir(id, yeniDurum) {
             const ogrenci = ogrenciler.find(o => o.id == id);
@@ -152,7 +297,7 @@
 
                 let navButonu = "";
                 if (o.lat && o.lng) {
-                    navButonu = `<a class="aksiyon-link link-nav" href="https://yandex.com.tr/harita/?rtext=~${o.lat},${o.lng}&rtt=auto" target="_blank">🧭 Ev Konumuna Yol Tarifi Başlat</a>`;
+                    navButonu = `<a class="aksiyon-link link-nav" href="https://yandex.com.tr/harita/?rtext=~${o.lat},${o.lng}&rtt=auto" target="_blank">🧭 Bu Durağa Git</a>`;
                 }
 
                 return `
@@ -203,6 +348,7 @@
                 document.getElementById('durum').innerText = "GPS uydularına bağlanılıyor...";
 
                 watchId = navigator.geolocation.watchPosition((pos) => {
+                    mevcutSoforKonumu = [pos.coords.latitude, pos.coords.longitude];
                     socket.emit('konumGonder', {
                         servisKodu: kod,
                         lat: pos.coords.latitude,
