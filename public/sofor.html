@@ -1,1 +1,79 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Şoför Paneli - Servis Takip</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; text-align: center; }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; font-size: 16px; box-sizing: border-box; }
+        button { background-color: #28a745; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        button.sim { background-color: #007bff; }
+        .bilgi { margin-top: 20px; padding: 15px; background: #f4f4f4; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h2>🚌 Şoför Konum Paylaşımı</h2>
+    <input type="text" id="servisKodu" placeholder="Servis Plakası / Kodu (Örn: 34S1001)" value="34S1001">
+    
+    <button onclick="gercekGpsBaslat()">Gerçek GPS ile Yayını Başlat</button>
+    <button class="sim" onclick="simulasyonBaslat()">Test Simülasyonu Başlat (PC İçin)</button>
 
+    <div class="bilgi" id="durum">Durum: Bekleniyor...</div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let watchId = null;
+        let simInterval = null;
+
+        function gercekGpsBaslat() {
+            const kod = document.getElementById('servisKodu').value.trim().toUpperCase();
+            if (!kod) return alert("Lütfen servis kodu girin!");
+
+            if ("geolocation" in navigator) {
+                document.getElementById('durum').innerText = "GPS aranıyor...";
+                watchId = navigator.geolocation.watchPosition((pos) => {
+                    const veri = {
+                        servisKodu: kod,
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        durum: "Servis Hareket Halinde"
+                    };
+                    socket.emit('konumGonder', veri);
+                    document.getElementById('durum').innerText = `Yayın Aktif (${kod})\nEnlem: ${veri.lat.toFixed(5)}\nBoylam: ${veri.lng.toFixed(5)}`;
+                }, (err) => {
+                    alert("Konum alınamadı: " + err.message);
+                }, { enableHighAccuracy: true });
+            } else {
+                alert("Tarayıcınız konum özelliğini desteklemiyor.");
+            }
+        }
+
+        // Bilgisayardan test edebilmek için sahte hareket üretici
+        function simulasyonBaslat() {
+            const kod = document.getElementById('servisKodu').value.trim().toUpperCase();
+            if (!kod) return alert("Lütfen servis kodu girin!");
+
+            let lat = 40.9607; // Örnek başlangıç noktası (Sultanbeyli civarı)
+            let lng = 29.2675;
+
+            if (simInterval) clearInterval(simInterval);
+
+            simInterval = setInterval(() => {
+                lat += 0.0003; // Aracı kuzeye doğru hareket ettir
+                lng += 0.0002; // Aracı doğuya doğru hareket ettir
+
+                socket.emit('konumGonder', {
+                    servisKodu: kod,
+                    lat: lat,
+                    lng: lng,
+                    durum: "Simülasyon Sürüşü"
+                });
+
+                document.getElementById('durum').innerText = `Simülasyon Aktif (${kod})\nEnlem: ${lat.toFixed(5)}\nBoylam: ${lng.toFixed(5)}`;
+            }, 2000); // Her 2 saniyede bir konum atar
+        }
+    </script>
+</body>
+</html>
