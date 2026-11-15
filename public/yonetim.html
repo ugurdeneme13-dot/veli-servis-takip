@@ -2,148 +2,125 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Servis Yönetim Paneli - Öğrenci & Konum Kayıtları</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e293b">
+    <title>Yönetim Paneli</title>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=8627d205-12fc-4c1b-b8c8-1abb08d3de62&lang=tr_TR" type="text/javascript"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 15px; background-color: #f0f2f5; color: #333; }
-        .konteyner { max-width: 1200px; margin: auto; }
-        .baslik-bar { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-        .baslik-bar h2 { margin: 0; font-size: 20px; }
-        .linkler a { color: #ffcc00; text-decoration: none; font-weight: bold; margin-left: 15px; font-size: 14px; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 10px; background-color: #f1f5f9; color: #1e293b; }
+        .konteyner { max-width: 720px; margin: auto; }
         
-        .kart { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
-        .kart h3 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
+        .baslik-bar { background: #1e293b; color: white; padding: 14px; border-radius: 12px; margin-bottom: 12px; }
+        .baslik-bar h2 { margin: 0 0 10px 0; font-size: 18px; text-align: center; }
+        .linkler { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .linkler a { background: #334155; color: #facc15; text-decoration: none; font-weight: bold; font-size: 14px; padding: 10px; border-radius: 8px; text-align: center; }
         
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+        .kart { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 14px; }
+        .kart h3 { margin: 0 0 12px 0; font-size: 16px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .form-grup { display: flex; flex-direction: column; }
-        .form-grup label { font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #555; }
-        .form-grup input { padding: 10px; border: 1px solid #ced4da; border-radius: 5px; font-size: 14px; }
-        .tam-genislik { grid-column: 1 / -1; }
+        .tam-satir { grid-column: 1 / -1; }
+        .form-grup label { font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #475569; }
+        .form-grup input { height: 46px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; background: #f8fafc; }
         
-        .konum-ust-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
-        .btn-gps-al { background: #007bff; color: white; border: none; padding: 7px 12px; border-radius: 5px; font-size: 13px; font-weight: bold; cursor: pointer; }
-        #konumSeciciHarita { width: 100%; height: 280px; border-radius: 6px; border: 2px solid #ced4da; }
-        .konum-bilgi { font-size: 13px; color: #dc3545; margin-top: 6px; font-weight: bold; }
-        .konum-secildi { color: #28a745; }
+        .btn-gps-al { width: 100%; height: 46px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 8px; }
+        #konumSeciciHarita { width: 100%; height: 240px; border-radius: 10px; border: 2px solid #cbd5e1; }
+        .konum-bilgi { font-size: 13px; color: #dc2626; margin-top: 6px; font-weight: bold; text-align: center; }
+        .konum-secildi { color: #16a34a; }
 
-        .btn-grup { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
-        .btn { padding: 12px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-kaydet { background: #28a745; color: white; }
-        .btn-temizle { background: #6c757d; color: white; }
+        .btn-grup { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+        .btn { width: 100%; height: 50px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .btn-kaydet { background: #16a34a; color: white; }
+        .btn-temizle { background: #64748b; color: white; height: 42px; font-size: 14px; }
         
-        .filtre-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
-        .filtre-bar input { padding: 8px 12px; border: 1px solid #ced4da; border-radius: 5px; width: 260px; }
-        .tablo-kapsayici { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { padding: 10px 12px; border-bottom: 1px solid #dee2e6; text-align: left; }
-        th { background-color: #f8f9fa; color: #2c3e50; font-weight: bold; white-space: nowrap; }
-        tr:hover { background-color: #f8f9fa; }
+        .arama-kutusu { width: 100%; height: 44px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 12px; }
+
+        /* Mobil Öğrenci Kayıt Kartları */
+        .kayit-kart { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #f8fafc; }
+        .kayit-ust { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .kayit-ad { font-size: 16px; font-weight: bold; color: #0f172a; }
+        .plaka-rozet { background: #1e293b; color: #facc15; padding: 3px 8px; border-radius: 6px; font-weight: bold; font-size: 13px; }
+        .kayit-detay { font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 10px; }
         
-        .plaka-rozet { background: #2c3e50; color: #ffcc00; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 13px; white-space: nowrap; }
-        .tel-link { color: #007bff; text-decoration: none; font-weight: 500; white-space: nowrap; }
-        .islem-btn { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; color: white; margin-right: 4px; }
-        .btn-duzenle { background: #ffc107; color: #000; font-weight: bold; }
-        .btn-sil { background: #dc3545; }
-        .btn-harita { background: #17a2b8; text-decoration: none; display: inline-block; font-weight: bold; }
+        .kayit-aksiyonlar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+        .k-btn { height: 38px; border: none; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+        .btn-harita { background: #0284c7; color: white; }
+        .btn-duzenle { background: #facc15; color: #0f172a; }
+        .btn-sil { background: #dc2626; color: white; }
     </style>
 </head>
 <body>
     <div class="konteyner">
         <div class="baslik-bar">
-            <h2>🛠️ Öğrenci & Konum Yönetim Paneli</h2>
+            <h2>🛠️ Öğrenci & Konum Yönetimi</h2>
             <div class="linkler">
-                <a href="/sofor.html" target="_blank">🚌 Şoför Ekranı</a>
-                <a href="/veli.html" target="_blank">👨‍👩‍👧 Veli Ekranı</a>
+                <a href="/sofor.html">🚌 Şoför Ekranı</a>
+                <a href="/veli.html">👨‍👩‍👧 Veli Ekranı</a>
             </div>
         </div>
 
         <div class="kart">
-            <h3 id="formBaslik">➕ Yeni Öğrenci ve Konum Kaydı</h3>
+            <h3 id="formBaslik">➕ Yeni Öğrenci Kaydı</h3>
             <input type="hidden" id="duzenlenenId">
             <div class="form-grid">
                 <div class="form-grup">
-                    <label>Sıra Numarası *</label>
-                    <input type="number" id="siraNo" placeholder="Örn: 1" min="1">
+                    <label>Sıra No *</label>
+                    <input type="number" id="siraNo" placeholder="1" min="1">
                 </div>
                 <div class="form-grup">
+                    <label>Araç Plakası *</label>
+                    <input type="text" id="plaka" placeholder="34S1001" value="34S1001" style="text-transform: uppercase;">
+                </div>
+                <div class="form-grup tam-satir">
                     <label>Öğrenci Adı Soyadı *</label>
                     <input type="text" id="ogrenciAd" placeholder="Örn: Ahmet Yılmaz">
                 </div>
-                <div class="form-grup">
+                <div class="form-grup tam-satir">
                     <label>Veli Adı Soyadı *</label>
                     <input type="text" id="veliAd" placeholder="Örn: Mustafa Yılmaz">
                 </div>
                 <div class="form-grup">
-                    <label>Araç Plakası (Servis Kodu) *</label>
-                    <input type="text" id="plaka" placeholder="Örn: 54S1001" value="34S1001" style="text-transform: uppercase;">
+                    <label>Veli Tel 1 *</label>
+                    <input type="tel" id="veliTel1" placeholder="0532...">
                 </div>
                 <div class="form-grup">
-                    <label>Veli Telefon 1 *</label>
-                    <input type="tel" id="veliTel1" placeholder="Örn: 0532 000 00 00">
+                    <label>Veli Tel 2</label>
+                    <input type="tel" id="veliTel2" placeholder="0542...">
                 </div>
-                <div class="form-grup">
-                    <label>Veli Telefon 2 (Yedek)</label>
-                    <input type="tel" id="veliTel2" placeholder="Örn: 0542 000 00 00">
-                </div>
-                <div class="form-grup tam-genislik">
+                <div class="form-grup tam-satir">
                     <label>Açık Adres</label>
-                    <input type="text" id="adres" placeholder="Mahalle, Cadde, Sokak, Bina No, Daire...">
+                    <input type="text" id="adres" placeholder="Mahalle, Sokak, No...">
                 </div>
-                <div class="form-grup tam-genislik">
-                    <div class="konum-ust-bar">
-                        <label style="margin:0;">Ev / Durak Konumu * (Haritaya tıklayın veya GPS butonunu kullanın)</label>
-                        <button type="button" class="btn-gps-al" onclick="mevcutGpsKonumunuAl()">📍 Mevcut GPS Konumumu Al</button>
-                    </div>
+                <div class="form-grup tam-satir">
+                    <label>Ev Konumu *</label>
+                    <button type="button" class="btn-gps-al" onclick="mevcutGpsKonumunuAl()">📍 Şu Anki GPS Konumumu Kullan</button>
                     <div id="konumSeciciHarita"></div>
-                    <div class="konum-bilgi" id="seciliKonumMetni">⚠️ Konum henüz seçilmedi! Lütfen harita üzerinden evi işaretleyin.</div>
+                    <div class="konum-bilgi" id="seciliKonumMetni">⚠️ Haritadan ev konumuna dokunun</div>
                     <input type="hidden" id="lat">
                     <input type="hidden" id="lng">
                 </div>
             </div>
             <div class="btn-grup">
-                <button class="btn btn-kaydet" onclick="kaydiKaydet()">💾 Konumu ve Kaydı Sunucuya Kaydet</button>
+                <button class="btn btn-kaydet" onclick="kaydiKaydet()">💾 Kaydet</button>
                 <button class="btn btn-temizle" onclick="formuTemizle()">Temizle / İptal</button>
             </div>
         </div>
 
         <div class="kart">
-            <div class="filtre-bar">
-                <h3 style="border:none; margin:0; padding:0;">📋 Kayıtlı Öğrenci & Konum Listesi (<span id="toplamSayi">0</span>)</h3>
-                <input type="text" id="aramaKutusu" onkeyup="tabloyuCiz()" placeholder="Plaka, öğrenci veya veli ara...">
-            </div>
-            <div class="tablo-kapsayici">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Sıra</th>
-                            <th>Plaka</th>
-                            <th>Öğrenci Adı Soyadı</th>
-                            <th>Veli Adı Soyadı</th>
-                            <th>Veli Tel 1</th>
-                            <th>Veli Tel 2</th>
-                            <th>Adres</th>
-                            <th>Kayıtlı Konum</th>
-                            <th>İşlemler</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ogrenciTabloGovde"></tbody>
-                </table>
-            </div>
+            <h3>📋 Kayıtlı Öğrenciler (<span id="toplamSayi">0</span>)</h3>
+            <input type="text" class="arama-kutusu" id="aramaKutusu" onkeyup="tabloyuCiz()" placeholder="Plaka, öğrenci veya veli ara...">
+            <div id="ogrenciKartListesi"></div>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let seciciMap = null;
-        let seciciPlacemark = null;
-        let tumKayitlar = [];
+        let seciciMap = null, seciciPlacemark = null, tumKayitlar = [];
 
-        // Sunucuya bağlanınca kayıtlı tüm verileri çek
-        socket.on('connect', () => {
-            socket.emit('yonetimTumunuGetir');
-        });
+        socket.on('connect', () => socket.emit('yonetimTumunuGetir'));
 
         socket.on('yonetimVeriListesi', (sunucuKayitlari) => {
             tumKayitlar = sunucuKayitlari || [];
@@ -151,29 +128,21 @@
             tabloyuCiz();
         });
 
-        // Yandex Harita Başlatma
         ymaps.ready(() => {
             seciciMap = new ymaps.Map("konumSeciciHarita", {
-                center: [40.7731, 30.3948], // Sakarya
+                center: [40.7731, 30.3948],
                 zoom: 13,
-                controls: ['zoomControl', 'searchControl', 'typeSelector']
+                controls: ['zoomControl', 'searchControl']
             });
 
-            seciciPlacemark = new ymaps.Placemark([40.7731, 30.3948], {
-                hintContent: 'Öğrenci Ev Konumu'
-            }, {
-                preset: 'islands#redHomeIcon',
-                draggable: true
-            });
+            seciciPlacemark = new ymaps.Placemark([40.7731, 30.3948], {}, { preset: 'islands#redHomeIcon', draggable: true });
             seciciMap.geoObjects.add(seciciPlacemark);
 
-            // Haritaya tıklanınca konumu seç
             seciciMap.events.add('click', (e) => {
                 const coords = e.get('coords');
                 konumuGuncelle(coords[0], coords[1]);
             });
 
-            // Pin sürüklendiğinde konumu güncelle
             seciciPlacemark.events.add('dragend', () => {
                 const coords = seciciPlacemark.geometry.getCoordinates();
                 konumuGuncelle(coords[0], coords[1]);
@@ -190,25 +159,16 @@
             bilgiEl.innerText = `✅ Konum Seçildi: ${latStr}, ${lngStr}`;
             bilgiEl.classList.add('konum-secildi');
 
-            if (seciciPlacemark) {
-                seciciPlacemark.geometry.setCoordinates([Number(lat), Number(lng)]);
-            }
+            if (seciciPlacemark) seciciPlacemark.geometry.setCoordinates([Number(lat), Number(lng)]);
         }
 
-        // Telefon veya cihazın mevcut GPS konumunu tek tuşla alma
         function mevcutGpsKonumunuAl() {
-            if (!("geolocation" in navigator)) {
-                return alert("Tarayıcınız GPS konum özelliğini desteklemiyor.");
-            }
-            document.getElementById('seciliKonumMetni').innerText = "📡 GPS konumu alınıyor, lütfen bekleyin...";
+            if (!("geolocation" in navigator)) return alert("GPS desteklenmiyor.");
+            document.getElementById('seciliKonumMetni').innerText = "📡 Konum alınıyor...";
             navigator.geolocation.getCurrentPosition((pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                konumuGuncelle(lat, lng);
-                if (seciciMap) seciciMap.setCenter([lat, lng], 17);
-            }, (err) => {
-                alert("Konum alınamadı: " + err.message);
-            }, { enableHighAccuracy: true });
+                konumuGuncelle(pos.coords.latitude, pos.coords.longitude);
+                if (seciciMap) seciciMap.setCenter([pos.coords.latitude, pos.coords.longitude], 17);
+            }, (err) => alert("Konum alınamadı: " + err.message), { enableHighAccuracy: true });
         }
 
         function otomatikSiraNoBelirle() {
@@ -229,41 +189,19 @@
             const lat = document.getElementById('lat').value;
             const lng = document.getElementById('lng').value;
 
-            if (!ogrenciAd || !veliAd || !plaka || !veliTel1) {
-                return alert("Lütfen Sıra No, Öğrenci Adı, Veli Adı, Plaka ve Veli Tel 1 alanlarını doldurun!");
-            }
-
-            if (!lat || !lng) {
-                return alert("Lütfen harita üzerinden öğrencinin ev konumunu işaretleyin veya 'Mevcut GPS Konumumu Al' butonuna basın!");
-            }
+            if (!ogrenciAd || !veliAd || !plaka || !veliTel1) return alert("Zorunlu alanları doldurun!");
+            if (!lat || !lng) return alert("Lütfen ev konumunu işaretleyin!");
 
             if (duzenlenenId) {
                 const index = tumKayitlar.findIndex(k => k.id == duzenlenenId);
                 if (index !== -1) {
-                    tumKayitlar[index] = {
-                        ...tumKayitlar[index],
-                        siraNo, ogrenciAd, veliAd, plaka, veliTel1, veliTel2, adres, lat, lng
-                    };
+                    tumKayitlar[index] = { ...tumKayitlar[index], siraNo, ogrenciAd, veliAd, plaka, veliTel1, veliTel2, adres, lat, lng };
                 }
             } else {
-                tumKayitlar.push({
-                    id: Date.now(),
-                    siraNo,
-                    ogrenciAd,
-                    veliAd,
-                    plaka,
-                    veliTel1,
-                    veliTel2,
-                    adres,
-                    lat,
-                    lng,
-                    durum: "Bekliyor"
-                });
+                tumKayitlar.push({ id: Date.now(), siraNo, ogrenciAd, veliAd, plaka, veliTel1, veliTel2, adres, lat, lng, durum: "Bekliyor" });
             }
 
             tumKayitlar.sort((a, b) => a.siraNo - b.siraNo);
-
-            // Sunucuya gönder ve diske kalıcı olarak kaydettir
             socket.emit('yonetimKayitGuncelle', tumKayitlar);
             formuTemizle();
         }
@@ -272,7 +210,7 @@
             const k = tumKayitlar.find(item => item.id == id);
             if (!k) return;
 
-            document.getElementById('formBaslik').innerText = "✏️ Öğrenci ve Konum Kaydını Düzenle";
+            document.getElementById('formBaslik').innerText = "✏️ Kaydı Düzenle";
             document.getElementById('duzenlenenId').value = k.id;
             document.getElementById('siraNo').value = k.siraNo;
             document.getElementById('ogrenciAd').value = k.ogrenciAd;
@@ -290,13 +228,13 @@
         }
 
         function kaydiSil(id) {
-            if (!confirm("Bu öğrenci ve konum kaydını kalıcı olarak silmek istediğinize emin misiniz?")) return;
+            if (!confirm("Kaydı silmek istiyor musunuz?")) return;
             tumKayitlar = tumKayitlar.filter(k => k.id != id);
             socket.emit('yonetimKayitGuncelle', tumKayitlar);
         }
 
         function formuTemizle() {
-            document.getElementById('formBaslik').innerText = "➕ Yeni Öğrenci ve Konum Kaydı";
+            document.getElementById('formBaslik').innerText = "➕ Yeni Öğrenci Kaydı";
             document.getElementById('duzenlenenId').value = "";
             document.getElementById('ogrenciAd').value = "";
             document.getElementById('veliAd').value = "";
@@ -307,47 +245,45 @@
             document.getElementById('lng').value = "";
             
             const bilgiEl = document.getElementById('seciliKonumMetni');
-            bilgiEl.innerText = "⚠️ Konum henüz seçilmedi! Lütfen harita üzerinden evi işaretleyin.";
+            bilgiEl.innerText = "⚠️ Haritadan ev konumuna dokunun";
             bilgiEl.classList.remove('konum-secildi');
-            
             otomatikSiraNoBelirle();
         }
 
         function tabloyuCiz() {
             const arama = document.getElementById('aramaKutusu').value.toLowerCase();
-            const govde = document.getElementById('ogrenciTabloGovde');
+            const alan = document.getElementById('ogrenciKartListesi');
             
             const filtrelenmis = tumKayitlar.filter(k => 
                 k.ogrenciAd.toLowerCase().includes(arama) ||
                 k.veliAd.toLowerCase().includes(arama) ||
-                k.plaka.toLowerCase().includes(arama) ||
-                (k.adres && k.adres.toLowerCase().includes(arama))
+                k.plaka.toLowerCase().includes(arama)
             );
 
             document.getElementById('toplamSayi').innerText = filtrelenmis.length;
 
             if (filtrelenmis.length === 0) {
-                govde.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#888; padding:20px;">Kayıtlı öğrenci bulunamadı.</td></tr>`;
+                alan.innerHTML = `<div style="text-align:center; color:#64748b; padding:15px;">Kayıt bulunamadı.</div>`;
                 return;
             }
 
-            govde.innerHTML = filtrelenmis.map(k => `
-                <tr>
-                    <td><strong>${k.siraNo}</strong></td>
-                    <td><span class="plaka-rozet">${k.plaka}</span></td>
-                    <td><strong>${k.ogrenciAd}</strong></td>
-                    <td>${k.veliAd}</td>
-                    <td><a class="tel-link" href="tel:${k.veliTel1}">${k.veliTel1}</a></td>
-                    <td>${k.veliTel2 ? `<a class="tel-link" href="tel:${k.veliTel2}">${k.veliTel2}</a>` : '-'}</td>
-                    <td>${k.adres || '-'}</td>
-                    <td style="white-space:nowrap;">
-                        <a class="islem-btn btn-harita" href="https://yandex.com.tr/harita/?pt=${k.lng},${k.lat}&z=16&l=map" target="_blank">📍 ${Number(k.lat).toFixed(4)}, ${Number(k.lng).toFixed(4)}</a>
-                    </td>
-                    <td style="white-space:nowrap;">
-                        <button class="islem-btn btn-duzenle" onclick="kaydiDuzenle(${k.id})">Düzenle</button>
-                        <button class="islem-btn btn-sil" onclick="kaydiSil(${k.id})">Sil</button>
-                    </td>
-                </tr>
+            alan.innerHTML = filtrelenmis.map(k => `
+                <div class="kayit-kart">
+                    <div class="kayit-ust">
+                        <span class="kayit-ad">${k.siraNo}. ${k.ogrenciAd}</span>
+                        <span class="plaka-rozet">${k.plaka}</span>
+                    </div>
+                    <div class="kayit-detay">
+                        <strong>Veli:</strong> ${k.veliAd}<br>
+                        <strong>Tel:</strong> <a href="tel:${k.veliTel1}" style="color:#0284c7;">${k.veliTel1}</a> ${k.veliTel2 ? `/ <a href="tel:${k.veliTel2}" style="color:#0284c7;">${k.veliTel2}</a>` : ''}<br>
+                        ${k.adres ? `<strong>Adres:</strong> ${k.adres}` : ''}
+                    </div>
+                    <div class="kayit-aksiyonlar">
+                        <a class="k-btn btn-harita" href="https://yandex.com.tr/harita/?pt=${k.lng},${k.lat}&z=16&l=map" target="_blank">📍 Harita</a>
+                        <button class="k-btn btn-duzenle" onclick="kaydiDuzenle(${k.id})">✏️ Düzenle</button>
+                        <button class="k-btn btn-sil" onclick="kaydiSil(${k.id})">🗑️ Sil</button>
+                    </div>
+                </div>
             `).join('');
         }
     </script>
