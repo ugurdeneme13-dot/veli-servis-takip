@@ -3,60 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Veli Servis Takip Ekranı</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>Veli Servis Takip - Yandex Haritalar</title>
+    <!-- Yandex Haritalar API v2.1 (Türkçe) -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=8627d205-12fc-4c1b-b8c8-1abb08d3de62&lang=tr_TR" type="text/javascript"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
-        .ust-bar { padding: 15px; background: #2c3e50; color: white; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        input { padding: 10px; font-size: 16px; border-radius: 4px; border: none; }
-        button { padding: 10px 20px; font-size: 16px; background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .ust-bar { padding: 12px 15px; background: #2c3e50; color: white; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        input { padding: 10px; font-size: 16px; border-radius: 5px; border: none; flex: 1; min-width: 140px; }
+        button { padding: 10px 20px; font-size: 16px; background: #ffcc00; color: #000; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #f2c200; }
         #harita { flex-grow: 1; width: 100%; }
-        #bilgi-kutusu { padding: 10px 15px; background: #ecf0f1; font-size: 14px; border-bottom: 1px solid #bdc3c7; }
+        #bilgi-kutusu { padding: 10px 15px; background: #f8f9fa; font-size: 14px; border-bottom: 1px solid #dee2e6; color: #333; font-weight: 500; }
     </style>
 </head>
 <body>
     <div class="ust-bar">
-        <strong>Veli Takip:</strong>
+        <strong>🚌 Veli Takip:</strong>
         <input type="text" id="takipKodu" placeholder="Servis Kodu (Örn: 34S1001)" value="34S1001">
         <button onclick="takibiBaslat()">Servisi Bul</button>
     </div>
-    <div id="bilgi-kutusu">Servis bekleniyor...</div>
+    <div id="bilgi-kutusu">Servis kodu girip "Servisi Bul" butonuna basın...</div>
     <div id="harita"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        
-        // Haritayı başlat
-        const map = L.map('harita').setView([40.9607, 29.2675], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+        let yandexMap = null;
+        let servisPlacemark = null;
 
-        let servisMarker = null;
+        // Yandex Haritası yüklendiğinde çalıştır
+        ymaps.ready(initHarita);
+
+        function initHarita() {
+            yandexMap = new ymaps.Map("harita", {
+                center: [40.7731, 30.3948], // Başlangıç merkezi (Sakarya)
+                zoom: 14,
+                controls: ['zoomControl', 'trafficControl', 'typeSelector', 'fullscreenControl']
+            });
+        }
 
         function takibiBaslat() {
             const kod = document.getElementById('takipKodu').value.trim().toUpperCase();
             if (!kod) return alert("Lütfen servis kodu girin!");
 
             socket.emit('serviseAboneOl', kod);
-            document.getElementById('bilgi-kutusu').innerText = `${kod} plakalı servis takip ediliyor. Konum bekleniyor...`;
+            document.getElementById('bilgi-kutusu').innerText = `📡 ${kod} plakalı servis takip ediliyor. Konum bekleniyor...`;
         }
 
         socket.on('konumGuncellendi', (veri) => {
+            if (!yandexMap) return;
+
             const yeniKonum = [veri.lat, veri.lng];
 
-            if (!servisMarker) {
-                servisMarker = L.marker(yeniKonum).addTo(map)
-                    .bindPopup("Okul Servisi").openPopup();
+            if (!servisPlacemark) {
+                // Haritada ilk kez servis ikonu (Placemark) oluştur
+                servisPlacemark = new ymaps.Placemark(yeniKonum, {
+                    hintContent: 'Okul Servisi',
+                    balloonContent: `<strong>Okul Servisi</strong><br>Durum: ${veri.durum}`
+                }, {
+                    preset: 'islands#yellowAutoIcon' // Yandex'in hazır sarı araç ikonu
+                });
+
+                yandexMap.geoObjects.add(servisPlacemark);
+                yandexMap.setCenter(yeniKonum, 16);
             } else {
-                servisMarker.setLatLng(yeniKonum);
+                // Mevcut servis ikonunun konumunu yumuşak şekilde güncelle
+                servisPlacemark.geometry.setCoordinates(yeniKonum);
+                servisPlacemark.properties.set('balloonContent', `<strong>Okul Servisi</strong><br>Durum: ${veri.durum}<br>Saat: ${veri.sonGuncelleme}`);
+                yandexMap.panTo(yeniKonum, { flying: true });
             }
 
-            map.panTo(yeniKonum); // Haritayı araca ortala
             document.getElementById('bilgi-kutusu').innerText = 
-                `Durum: ${veri.durum} | Son Güncelleme: ${veri.sonGuncelleme}`;
+                `✅ Durum: ${veri.durum} | Son Güncelleme: ${veri.sonGuncelleme}`;
         });
     </script>
 </body>
