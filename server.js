@@ -9,8 +9,9 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Hafızada aktif servis konumları ve öğrenci listeleri
+// Hafızada aktif servis konumları ve detaylı öğrenci kayıtları
 const aktifServisler = {};
+// Yapı: { "34S1001": [ { id, siraNo, ogrenciAd, veliAd, veliTel1, veliTel2, adres, lat, lng, plaka, durum }, ... ] }
 const servisOgrencileri = {};
 
 io.on('connection', (socket) => {
@@ -25,37 +26,47 @@ io.on('connection', (socket) => {
         io.to(veri.servisKodu).emit('konumGuncellendi', aktifServisler[veri.servisKodu]);
     });
 
-    // 2. Şoför öğrenci listesini veya öğrenci durumunu (Bindi/İndi) güncellediğinde
+    // 2. Yönetim panelinden veya şoförden öğrenci listesi güncellendiğinde
     socket.on('ogrenciDurumGuncelle', (veri) => {
-        // veri: { servisKodu, ogrenciler, bildirimMesaji, ogrenciAdi, durum }
-        servisOgrencileri[veri.servisKodu] = veri.ogrenciler;
+        const kod = veri.servisKodu.toUpperCase();
+        servisOgrencileri[kod] = veri.ogrenciler;
 
-        // Tüm velilere güncel listeyi ve anlık bildirimi gönder
-        io.to(veri.servisKodu).emit('ogrenciBildirimi', {
+        // İlgili plakaya bağlı şoför ve veli ekranlarına güncel listeyi aktar
+        io.to(kod).emit('ogrenciBildirimi', {
             ogrenciler: veri.ogrenciler,
-            mesaj: veri.bildirimMesaji,
-            ogrenciAdi: veri.ogrenciAdi,
-            durum: veri.durum,
+            mesaj: veri.bildirimMesaji || null,
+            ogrenciAdi: veri.ogrenciAdi || null,
+            durum: veri.durum || null,
             saat: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
         });
+        
+        // Şoför panelinin açık olduğu odaya doğrudan liste güncellemesi gönder
+        io.to(kod).emit('mevcutOgrenciListesi', veri.ogrenciler);
     });
 
-    // 3. Şoför bağlandığında mevcut listeyi geri yükle
+    // 3. Yönetim paneli tüm kayıtları istediğinde
+    socket.on('yonetimTumunuGetir', () => {
+        socket.emit('yonetimVeriListesi', servisOgrencileri);
+    });
+
+    // 4. Şoför bağlandığında kendi plakasının listesini al
     socket.on('soforListeyiGetir', (servisKodu) => {
-        socket.join(servisKodu);
-        if (servisOgrencileri[servisKodu]) {
-            socket.emit('mevcutOgrenciListesi', servisOgrencileri[servisKodu]);
+        const kod = servisKodu.toUpperCase();
+        socket.join(kod);
+        if (servisOgrencileri[kod]) {
+            socket.emit('mevcutOgrenciListesi', servisOgrencileri[kod]);
         }
     });
 
-    // 4. Veli belirli bir servisi takibe başladığında
+    // 5. Veli belirli bir servisi takibe başladığında
     socket.on('serviseAboneOl', (servisKodu) => {
-        socket.join(servisKodu);
-        if (aktifServisler[servisKodu]) {
-            socket.emit('konumGuncellendi', aktifServisler[servisKodu]);
+        const kod = servisKodu.toUpperCase();
+        socket.join(kod);
+        if (aktifServisler[kod]) {
+            socket.emit('konumGuncellendi', aktifServisler[kod]);
         }
-        if (servisOgrencileri[servisKodu]) {
-            socket.emit('mevcutOgrenciListesi', servisOgrencileri[servisKodu]);
+        if (servisOgrencileri[kod]) {
+            socket.emit('mevcutOgrenciListesi', servisOgrencileri[kod]);
         }
     });
 });
