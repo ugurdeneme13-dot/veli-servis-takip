@@ -2,89 +2,88 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Veli Servis Takip - Yandex Haritalar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e293b">
+    <title>Veli Servis Takip</title>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=8627d205-12fc-4c1b-b8c8-1abb08d3de62&lang=tr_TR" type="text/javascript"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .ust-bar { padding: 10px 15px; background: #2c3e50; color: white; display: flex; gap: 8px; align-items: center; }
-        input { padding: 10px; font-size: 15px; border-radius: 5px; border: none; flex: 1; min-width: 110px; }
-        button { padding: 10px 16px; font-size: 15px; background: #ffcc00; color: #000; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; background: #f8fafc; }
         
-        /* Anlık Bildirim Banner */
-        #canli-bildirim { display: none; padding: 12px 15px; background: #28a745; color: white; font-weight: bold; text-align: center; font-size: 15px; animation: yanipSon 0.5s ease-in-out 2; }
-        @keyframes yanipSon { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .ust-bar { padding: 10px 12px; background: #1e293b; color: white; display: flex; gap: 8px; align-items: center; }
+        .ust-bar input { flex: 1; height: 44px; padding: 0 12px; font-size: 16px; border-radius: 8px; border: none; font-weight: bold; text-transform: uppercase; }
+        .ust-bar button { height: 44px; padding: 0 18px; font-size: 15px; background: #facc15; color: #0f172a; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+        
+        #canli-bildirim { display: none; padding: 12px; background: #16a34a; color: white; font-weight: bold; text-align: center; font-size: 15px; }
+        #bilgi-kutusu { padding: 8px 12px; background: #f1f5f9; font-size: 13px; border-bottom: 1px solid #cbd5e1; color: #334155; font-weight: 500; text-align: center; }
+        
+        #harita { flex: 1; width: 100%; min-height: 45%; }
 
-        #bilgi-kutusu { padding: 8px 15px; background: #f8f9fa; font-size: 13px; border-bottom: 1px solid #dee2e6; color: #333; }
-        #harita { flex-grow: 1; width: 100%; }
-
-        /* Alt Öğrenci Durum Paneli */
-        .alt-panel { background: white; border-top: 2px solid #2c3e50; max-height: 32vh; overflow-y: auto; padding: 10px 15px; }
-        .alt-baslik { font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 8px; display: flex; justify-content: space-between; }
-        .veli-ogrenci-satir { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
-        .badge { padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-        .b-Bindi { background: #d4edda; color: #155724; }
-        .b-İndi { background: #cce5ff; color: #004085; }
-        .b-Gelmedi { background: #f8d7da; color: #721c24; }
-        .b-Bekliyor { background: #e2e3e5; color: #383d41; }
+        .alt-panel { background: white; border-top: 2px solid #cbd5e1; height: 34dvh; overflow-y: auto; padding: 12px; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); }
+        .alt-baslik { font-weight: bold; font-size: 15px; color: #1e293b; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .veli-ogrenci-satir { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 15px; }
+        .veli-ogrenci-satir:last-child { border-bottom: none; }
+        
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .b-Bindi { background: #dcfce7; color: #166534; }
+        .b-İndi { background: #dbeafe; color: #1e40af; }
+        .b-Gelmedi { background: #fee2e2; color: #991b1b; }
+        .b-Bekliyor { background: #e2e8f0; color: #334155; }
     </style>
 </head>
 <body>
     <div class="ust-bar">
-        <strong>🚌 Takip:</strong>
-        <input type="text" id="takipKodu" placeholder="Servis Kodu" value="34S1001">
-        <button onclick="takibiBaslat()">Servisi Bul</button>
+        <span style="font-size:20px;">🚌</span>
+        <input type="text" id="takipKodu" placeholder="Plaka (Örn: 34S1001)" value="34S1001">
+        <button onclick="takibiBaslat()">Takip Et</button>
     </div>
 
     <div id="canli-bildirim"></div>
-    <div id="bilgi-kutusu">Servis kodu girip "Servisi Bul" butonuna basın...</div>
+    <div id="bilgi-kutusu">Servis plakasını girip "Takip Et" butonuna basın</div>
     <div id="harita"></div>
 
     <div class="alt-panel">
         <div class="alt-baslik">
-            <span>📋 Öğrenci Biniş / İniş Durumları</span>
-            <span id="sonBildirimSaat" style="color:#888; font-weight:normal;"></span>
+            <span>📋 Öğrenci Durumları</span>
+            <span id="sonBildirimSaat" style="color:#64748b; font-size:12px; font-weight:normal;"></span>
         </div>
         <div id="veliOgrenciListesi">
-            <div style="color:#888; font-size:13px;">Henüz öğrenci listesi yüklenmedi.</div>
+            <div style="color:#64748b; font-size:14px; text-align:center; padding-top:15px;">Henüz öğrenci listesi yüklenmedi.</div>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let yandexMap = null;
-        let servisPlacemark = null;
+        let yandexMap = null, servisPlacemark = null;
 
         ymaps.ready(() => {
             yandexMap = new ymaps.Map("harita", {
                 center: [40.7731, 30.3948],
                 zoom: 14,
-                controls: ['zoomControl', 'trafficControl', 'fullscreenControl']
+                controls: ['zoomControl', 'trafficControl']
             });
         });
 
-        // Kısa bildirim sesi üretici (Harici ses dosyası gerektirmez)
         function bildirimSesiCal() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, ctx.currentTime); // La notası
-                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                gain.gain.setValueAtTime(0.25, ctx.currentTime);
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start();
-                osc.stop(ctx.currentTime + 0.25);
+                osc.stop(ctx.currentTime + 0.3);
             } catch (e) {}
         }
 
         function takibiBaslat() {
-            const kod = document.getElementById('takipKodu').value.trim().toUpperCase();
-            if (!kod) return alert("Lütfen servis kodu girin!");
+            const kod = document.getElementById('takipKodu').value.trim().toUpperCase().replace(/\s+/g, '');
+            if (!kod) return alert("Lütfen servis plakasını girin!");
 
-            // Tarayıcı bildirim izni iste
             if ("Notification" in window && Notification.permission === "default") {
                 Notification.requestPermission();
             }
@@ -99,15 +98,13 @@
 
             alan.innerHTML = liste.map(o => `
                 <div class="veli-ogrenci-satir">
-                    <span>${o.ad}</span>
-                    <span class="badge b-${o.durum}">${o.durum}</span>
+                    <span style="font-weight:500;">${o.ogrenciAd || o.ad}</span>
+                    <span class="badge b-${o.durum || 'Bekliyor'}">${o.durum || 'Bekliyor'}</span>
                 </div>
             `).join('');
         }
 
-        socket.on('mevcutOgrenciListesi', (liste) => {
-            ogrenciListesiniGuncelle(liste);
-        });
+        socket.on('mevcutOgrenciListesi', (liste) => ogrenciListesiniGuncelle(liste));
 
         socket.on('ogrenciBildirimi', (veri) => {
             ogrenciListesiniGuncelle(veri.ogrenciler);
@@ -116,14 +113,13 @@
                 const banner = document.getElementById('canli-bildirim');
                 banner.innerText = `${veri.mesaj} (${veri.saat})`;
                 banner.style.display = 'block';
-                banner.style.background = veri.durum === 'İndi' ? '#007bff' : (veri.durum === 'Gelmedi' ? '#dc3545' : '#28a745');
+                banner.style.background = veri.durum === 'İndi' ? '#2563eb' : (veri.durum === 'Gelmedi' ? '#dc2626' : '#16a34a');
                 
-                document.getElementById('sonBildirimSaat').innerText = `Son işlem: ${veri.saat}`;
+                document.getElementById('sonBildirimSaat').innerText = `Son: ${veri.saat}`;
                 bildirimSesiCal();
 
-                // Tarayıcı masaüstü/mobil bildirimi gönder
                 if ("Notification" in window && Notification.permission === "granted") {
-                    new Notification("Okul Servisi Bildirimi", { body: veri.mesaj });
+                    new Notification("Okul Servisi", { body: veri.mesaj });
                 }
             }
         });
@@ -134,8 +130,7 @@
 
             if (!servisPlacemark) {
                 servisPlacemark = new ymaps.Placemark(yeniKonum, {
-                    hintContent: 'Okul Servisi',
-                    balloonContent: `<strong>Okul Servisi</strong><br>Durum: ${veri.durum}`
+                    hintContent: 'Okul Servisi'
                 }, { preset: 'islands#yellowAutoIcon' });
 
                 yandexMap.geoObjects.add(servisPlacemark);
@@ -145,7 +140,7 @@
                 yandexMap.panTo(yeniKonum, { flying: true });
             }
 
-            document.getElementById('bilgi-kutusu').innerText = `✅ Durum: ${veri.durum} | Son Güncelleme: ${veri.sonGuncelleme}`;
+            document.getElementById('bilgi-kutusu').innerText = `✅ ${veri.durum} • Güncelleme: ${veri.sonGuncelleme}`;
         });
     </script>
 </body>
