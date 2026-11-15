@@ -2,166 +2,185 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Şoför Paneli - Servis & Yoklama</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e293b">
+    <title>Şoför Paneli</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 15px; max-width: 480px; margin: auto; background-color: #f4f6f9; color: #333; }
-        h2, h3 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
-        .kart { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); margin-bottom: 15px; }
-        input { width: 100%; padding: 12px; margin: 6px 0; font-size: 16px; box-sizing: border-box; border-radius: 6px; border: 1px solid #ced4da; }
-        .btn { width: 100%; padding: 12px; margin: 5px 0; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; }
-        .btn-gps { background-color: #28a745; }
-        .btn-sim { background-color: #007bff; }
-        .btn-durdur { background-color: #dc3545; display: none; }
-        .btn-ekle { background-color: #17a2b8; width: auto; padding: 12px 18px; }
-        .ekle-grup { display: flex; gap: 8px; align-items: center; }
-        .ekran-durum { margin-top: 8px; padding: 8px; border-radius: 5px; font-size: 13px; text-align: center; background: #e9ecef; }
-        .ekran-aktif { background: #d4edda; color: #155724; font-weight: bold; }
-        .bilgi { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 14px; text-align: center; border: 1px solid #e9ecef; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 10px; background-color: #f1f5f9; color: #1e293b; }
         
-        /* Öğrenci Listesi Stilleri */
-        .ogrenci-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; gap: 6px; flex-wrap: wrap; }
-        .ogrenci-item:last-child { border-bottom: none; }
-        .ogrenci-ad { font-weight: bold; font-size: 15px; flex: 1; min-width: 120px; }
-        .durum-etiket { font-size: 12px; padding: 3px 7px; border-radius: 4px; display: inline-block; margin-top: 3px; }
-        .etiket-bekliyor { background: #e2e3e5; color: #383d41; }
-        .etiket-bindi { background: #d4edda; color: #155724; }
-        .etiket-indi { background: #cce5ff; color: #004085; }
-        .etiket-gelmedi { background: #f8d7da; color: #721c24; }
+        .ust-baslik { background: #1e293b; color: white; padding: 14px; border-radius: 12px; text-align: center; margin-bottom: 12px; }
+        .ust-baslik h2 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
+
+        .kart { background: white; padding: 14px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 12px; }
         
-        .aksiyon-butonlar { display: flex; gap: 4px; }
-        .mini-btn { padding: 8px 10px; border: none; border-radius: 5px; color: white; font-weight: bold; font-size: 13px; cursor: pointer; }
-        .b-bindi { background: #28a745; }
-        .b-indi { background: #007bff; }
-        .b-gelmedi { background: #6c757d; }
-        .b-sil { background: #dc3545; padding: 8px; }
+        .plaka-satir { display: flex; gap: 8px; margin-bottom: 10px; }
+        .plaka-satir input { flex: 1; height: 48px; font-size: 17px; font-weight: bold; text-align: center; text-transform: uppercase; border: 2px solid #cbd5e1; border-radius: 10px; background: #f8fafc; }
+        .btn-getir { background: #1e293b; color: #facc15; border: none; padding: 0 18px; height: 48px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; }
+
+        .btn { width: 100%; height: 50px; margin: 6px 0; font-size: 16px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-gps { background-color: #16a34a; }
+        .btn-sim { background-color: #2563eb; }
+        .btn-durdur { background-color: #dc2626; display: none; }
+        
+        .durum-cubuk { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+        .ekran-durum { padding: 8px; border-radius: 8px; font-size: 13px; text-align: center; background: #e2e8f0; color: #475569; }
+        .ekran-aktif { background: #dcfce7; color: #166534; font-weight: bold; }
+        .bilgi { padding: 10px; background: #f8fafc; border-radius: 8px; font-size: 14px; text-align: center; border: 1px solid #e2e8f0; font-weight: 500; }
+
+        .liste-baslik { font-size: 16px; font-weight: bold; margin: 0 0 12px 0; color: #1e293b; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Mobil Öğrenci Kartları */
+        .ogrenci-kart { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 12px; background: #fff; border-left: 6px solid #94a3b8; }
+        .ogrenci-kart.durum-Bindi { border-left-color: #16a34a; background: #f0fdf4; }
+        .ogrenci-kart.durum-İndi { border-left-color: #2563eb; background: #eff6ff; }
+        .ogrenci-kart.durum-Gelmedi { border-left-color: #dc2626; background: #fef2f2; }
+
+        .ogr-ust { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+        .ogr-isim { font-size: 17px; font-weight: bold; color: #0f172a; }
+        .durum-rozet { font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+        .rozet-Bekliyor { background: #e2e8f0; color: #334155; }
+        .rozet-Bindi { background: #16a34a; color: white; }
+        .rozet-İndi { background: #2563eb; color: white; }
+        .rozet-Gelmedi { background: #dc2626; color: white; }
+
+        .ogr-detay { font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 12px; }
+        
+        .iletisim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .aksiyon-link { text-decoration: none; font-size: 14px; font-weight: bold; height: 42px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .link-tel { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .link-nav { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; grid-column: 1 / -1; }
+
+        .yoklama-butonlar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .y-btn { height: 46px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 14px; cursor: pointer; }
+        .y-bindi { background: #16a34a; }
+        .y-indi { background: #2563eb; }
+        .y-yok { background: #64748b; }
     </style>
 </head>
 <body>
-    <h2>🚌 Şoför Kontrol Paneli</h2>
-
-    <!-- Konum ve Yayın Kartı -->
-    <div class="kart">
-        <input type="text" id="servisKodu" placeholder="Servis Kodu (Örn: 34S1001)" value="34S1001" style="text-align:center; font-weight:bold;">
-        <button class="btn btn-gps" onclick="gercekGpsBaslat()">📍 Gerçek GPS ile Yayını Başlat</button>
-        <button class="btn btn-sim" onclick="simulasyonBaslat()">🔄 Test Simülasyonu Başlat</button>
-        <button id="btnDurdur" class="btn btn-durdur" onclick="yayiniDurdur()">⏹️ Yayını Durdur</button>
-        <div class="ekran-durum" id="ekranDurum">Ekran Kilidi Önleyici: Beklemede</div>
-        <div class="bilgi" id="durum">Durum: Konum yayını bekleniyor...</div>
+    <div class="ust-baslik">
+        <h2>🚌 Şoför Kontrol Paneli</h2>
     </div>
 
-    <!-- Öğrenci Yoklama ve Bildirim Kartı -->
     <div class="kart">
-        <h3>📋 Öğrenci Yoklama Listesi</h3>
-        <div class="ekle-grup">
-            <input type="text" id="yeniOgrenciAd" placeholder="Öğrenci Adı Soyadı">
-            <button class="btn btn-ekle" onclick="ogrenciEkle()">+ Ekle</button>
+        <div class="plaka-satir">
+            <input type="text" id="servisKodu" placeholder="Araç Plakası" value="34S1001">
+            <button class="btn-getir" onclick="listeyiSunucudanIstekYap()">Getir</button>
         </div>
-        <div id="ogrenciListesiAlani" style="margin-top: 12px;"></div>
+        
+        <button class="btn btn-gps" onclick="gercekGpsBaslat()">📍 Canlı GPS Başlat</button>
+        <button class="btn btn-sim" onclick="simulasyonBaslat()">🔄 Test Simülasyonu</button>
+        <button id="btnDurdur" class="btn btn-durdur" onclick="yayiniDurdur()">⏹️ Yayını Durdur</button>
+
+        <div class="durum-cubuk">
+            <div class="ekran-durum" id="ekranDurum">Ekran Kilidi: Beklemede</div>
+            <div class="bilgi" id="durum">Konum yayını bekleniyor...</div>
+        </div>
+    </div>
+
+    <div class="kart">
+        <div class="liste-baslik">
+            <span>📋 Sefer Yolcu Listesi</span>
+            <span id="ogrenciSayisi" style="background:#1e293b; color:#facc15; padding:2px 10px; border-radius:12px; font-size:14px;">0</span>
+        </div>
+        <div id="ogrenciListesiAlani">
+            <p style="text-align:center; color:#64748b; font-size:14px;">Sunucudan kayıtlı öğrenciler bekleniyor...</p>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let watchId = null;
-        let simInterval = null;
-        let wakeLock = null;
-        let yayinAktif = false;
-
-        // Varsayılan veya tarayıcıda kayıtlı öğrenci listesi
-        let ogrenciler = JSON.parse(localStorage.getItem('servis_ogrenciler')) || [
-            { id: 1, ad: "Ahmet Yılmaz", durum: "Bekliyor" },
-            { id: 2, ad: "Zeynep Kaya", durum: "Bekliyor" },
-            { id: 3, ad: "Mehmet Demir", durum: "Bekliyor" }
-        ];
+        let watchId = null, simInterval = null, wakeLock = null, yayinAktif = false, ogrenciler = [];
 
         function servisKodunuAl() {
-            return document.getElementById('servisKodu').value.trim().toUpperCase() || "34S1001";
+            return document.getElementById('servisKodu').value.trim().toUpperCase().replace(/\s+/g, '') || "34S1001";
         }
 
-        // Sayfa açıldığında listeyi çiz ve sunucuya bağlan
-        window.onload = () => {
-            listeyiCiz();
-            socket.emit('soforListeyiGetir', servisKodunuAl());
-        };
+        socket.on('connect', () => listeyiSunucudanIstekYap());
 
-        function listeyiKaydetVeGonder(bildirimMesaji = null, ogrenciAdi = null, durum = null) {
-            localStorage.setItem('servis_ogrenciler', JSON.stringify(ogrenciler));
+        function listeyiSunucudanIstekYap() {
+            socket.emit('soforListeyiGetir', servisKodunuAl());
+        }
+
+        socket.on('mevcutOgrenciListesi', (sunucuListesi) => {
+            ogrenciler = (sunucuListesi || []).sort((a, b) => (a.siraNo || 0) - (b.siraNo || 0));
+            listeyiCiz();
+        });
+
+        function durumDegistir(id, yeniDurum) {
+            const ogrenci = ogrenciler.find(o => o.id == id);
+            if (!ogrenci) return;
+
+            ogrenci.durum = yeniDurum;
+            const isim = ogrenci.ogrenciAd || ogrenci.ad;
+            let mesaj = "";
+            if (yeniDurum === "Bindi") mesaj = `✅ ${isim} servise BİNDİ.`;
+            if (yeniDurum === "İndi") mesaj = `🏠 ${isim} servisten İNDİ.`;
+            if (yeniDurum === "Gelmedi") mesaj = `❌ ${isim} bugün servise GELMEDİ.`;
+
             listeyiCiz();
             socket.emit('ogrenciDurumGuncelle', {
                 servisKodu: servisKodunuAl(),
                 ogrenciler: ogrenciler,
-                bildirimMesaji: bildirimMesaji,
-                ogrenciAdi: ogrenciAdi,
-                durum: durum
+                bildirimMesaji: mesaj,
+                ogrenciAdi: isim,
+                durum: yeniDurum
             });
-        }
-
-        function ogrenciEkle() {
-            const input = document.getElementById('yeniOgrenciAd');
-            const ad = input.value.trim();
-            if (!ad) return alert("Lütfen öğrenci adını yazın.");
-
-            ogrenciler.push({ id: Date.now(), ad: ad, durum: "Bekliyor" });
-            input.value = "";
-            listeyiKaydetVeGonder();
-        }
-
-        function durumDegistir(id, yeniDurum) {
-            const ogrenci = ogrenciler.find(o => o.id === id);
-            if (!ogrenci) return;
-
-            ogrenci.durum = yeniDurum;
-            let mesaj = "";
-            if (yeniDurum === "Bindi") mesaj = `✅ ${ogrenci.ad} servise BİNDİ.`;
-            if (yeniDurum === "İndi") mesaj = `🏠 ${ogrenci.ad} servisten İNDİ.`;
-            if (yeniDurum === "Gelmedi") mesaj = `❌ ${ogrenci.ad} bugün servise GELMEDİ.`;
-
-            listeyiKaydetVeGonder(mesaj, ogrenci.ad, yeniDurum);
-        }
-
-        function ogrenciSil(id) {
-            if (!confirm("Bu öğrenciyi listeden silmek istiyor musunuz?")) return;
-            ogrenciler = ogrenciler.filter(o => o.id !== id);
-            listeyiKaydetVeGonder();
         }
 
         function listeyiCiz() {
             const alan = document.getElementById('ogrenciListesiAlani');
+            document.getElementById('ogrenciSayisi').innerText = ogrenciler.length;
+
             if (ogrenciler.length === 0) {
-                alan.innerHTML = "<p style='text-align:center; color:#888;'>Listede öğrenci yok.</p>";
+                alan.innerHTML = `<p style="text-align:center; color:#64748b; font-size:14px; padding:10px 0;">Bu plakaya (${servisKodunuAl()}) kayıtlı öğrenci bulunamadı.</p>`;
                 return;
             }
 
             alan.innerHTML = ogrenciler.map(o => {
-                let etiketSinif = "etiket-bekliyor";
-                if (o.durum === "Bindi") etiketSinif = "etiket-bindi";
-                if (o.durum === "İndi") etiketSinif = "etiket-indi";
-                if (o.durum === "Gelmedi") etiketSinif = "etiket-gelmedi";
+                const durum = o.durum || "Bekliyor";
+                const sira = o.siraNo ? `${o.siraNo}. ` : "";
+                const ogrIsim = o.ogrenciAd || o.ad;
+                const veliBilgi = o.veliAd ? `<strong>Veli:</strong> ${o.veliAd}` : "";
+                const adresBilgi = o.adres ? `<br><strong>Adres:</strong> ${o.adres}` : "";
+
+                let telButonlari = "";
+                if (o.veliTel1) telButonlari += `<a class="aksiyon-link link-tel" href="tel:${o.veliTel1}">📞 Veli Tel 1</a>`;
+                if (o.veliTel2) telButonlari += `<a class="aksiyon-link link-tel" href="tel:${o.veliTel2}">📞 Veli Tel 2</a>`;
+
+                let navButonu = "";
+                if (o.lat && o.lng) {
+                    navButonu = `<a class="aksiyon-link link-nav" href="https://yandex.com.tr/harita/?rtext=~${o.lat},${o.lng}&rtt=auto" target="_blank">🧭 Ev Konumuna Yol Tarifi Başlat</a>`;
+                }
 
                 return `
-                <div class="ogrenci-item">
-                    <div class="ogrenci-ad">
-                        ${o.ad}<br>
-                        <span class="durum-etiket ${etiketSinif}">${o.durum}</span>
+                <div class="ogrenci-kart durum-${durum}">
+                    <div class="ogr-ust">
+                        <div class="ogr-isim">${sira}${ogrIsim}</div>
+                        <span class="durum-rozet rozet-${durum}">${durum}</span>
                     </div>
-                    <div class="aksiyon-butonlar">
-                        <button class="mini-btn b-bindi" onclick="durumDegistir(${o.id}, 'Bindi')">Bindi</button>
-                        <button class="mini-btn b-indi" onclick="durumDegistir(${o.id}, 'İndi')">İndi</button>
-                        <button class="mini-btn b-gelmedi" onclick="durumDegistir(${o.id}, 'Gelmedi')">Yok</button>
-                        <button class="mini-btn b-sil" onclick="ogrenciSil(${o.id})">🗑️</button>
+                    <div class="ogr-detay">${veliBilgi}${adresBilgi}</div>
+                    <div class="iletisim-grid">
+                        ${telButonlari}
+                        ${navButonu}
+                    </div>
+                    <div class="yoklama-butonlar">
+                        <button class="y-btn y-bindi" onclick="durumDegistir(${o.id}, 'Bindi')">✅ Bindi</button>
+                        <button class="y-btn y-indi" onclick="durumDegistir(${o.id}, 'İndi')">🏠 İndi</button>
+                        <button class="y-btn y-yok" onclick="durumDegistir(${o.id}, 'Gelmedi')">❌ Yok</button>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        // Ekranı Uyanık Tutma (Wake Lock)
         async function ekraniAcikTut() {
             const kutu = document.getElementById('ekranDurum');
             if ('wakeLock' in navigator) {
                 try {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    kutu.innerText = "☀️ Ekran Açık Tutuluyor (Uyku Modu Engellendi)";
+                    kutu.innerText = "☀️ Ekran Açık Tutuluyor";
                     kutu.classList.add('ekran-aktif');
                 } catch (e) {
                     kutu.innerText = "⚠️ Ekran kilidi engellenemedi";
@@ -175,10 +194,12 @@
 
         function gercekGpsBaslat() {
             const kod = servisKodunuAl();
+            listeyiSunucudanIstekYap();
+
             if ("geolocation" in navigator) {
                 yayinAktif = true;
                 ekraniAcikTut();
-                document.getElementById('btnDurdur').style.display = 'block';
+                document.getElementById('btnDurdur').style.display = 'flex';
                 document.getElementById('durum').innerText = "GPS uydularına bağlanılıyor...";
 
                 watchId = navigator.geolocation.watchPosition((pos) => {
@@ -188,23 +209,26 @@
                         lng: pos.coords.longitude,
                         durum: "Servis Hareket Halinde"
                     });
-                    document.getElementById('durum').innerText = `✅ Yayın Aktif (${kod}) - Hız: ${pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0} km/s`;
+                    const hiz = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
+                    document.getElementById('durum').innerText = `✅ Canlı Yayın Aktif (${kod}) • ${hiz} km/s`;
                 }, (err) => alert("Konum alınamadı: " + err.message), { enableHighAccuracy: true, maximumAge: 0 });
             }
         }
 
         function simulasyonBaslat() {
             const kod = servisKodunuAl();
+            listeyiSunucudanIstekYap();
             yayinAktif = true;
             ekraniAcikTut();
-            document.getElementById('btnDurdur').style.display = 'block';
+            document.getElementById('btnDurdur').style.display = 'flex';
 
-            let lat = 40.7731, lng = 30.3948;
+            let lat = (ogrenciler[0] && ogrenciler[0].lat) ? Number(ogrenciler[0].lat) - 0.002 : 40.7731;
+            let lng = (ogrenciler[0] && ogrenciler[0].lng) ? Number(ogrenciler[0].lng) - 0.002 : 30.3948;
+
             if (simInterval) clearInterval(simInterval);
-
             simInterval = setInterval(() => {
-                lat += 0.0003;
-                lng += 0.0002;
+                lat += 0.00025;
+                lng += 0.00020;
                 socket.emit('konumGonder', { servisKodu: kod, lat, lng, durum: "Simülasyon Sürüşü" });
                 document.getElementById('durum').innerText = `🔄 Simülasyon Aktif (${kod})`;
             }, 2000);
@@ -216,9 +240,9 @@
             if (simInterval !== null) clearInterval(simInterval);
             if (wakeLock !== null) { wakeLock.release(); wakeLock = null; }
             document.getElementById('btnDurdur').style.display = 'none';
-            document.getElementById('ekranDurum').innerText = "Ekran Kilidi Önleyici: Pasif";
+            document.getElementById('ekranDurum').innerText = "Ekran Kilidi: Pasif";
             document.getElementById('ekranDurum').classList.remove('ekran-aktif');
-            document.getElementById('durum').innerText = "Durum: Yayın durduruldu.";
+            document.getElementById('durum').innerText = "Yayın durduruldu.";
         }
     </script>
 </body>
